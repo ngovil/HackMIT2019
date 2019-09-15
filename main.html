@@ -1,0 +1,303 @@
+<html>
+<body>
+
+<style>
+body {
+  font-family: "Helvetica Neue", Helvetica, sans-serif;
+}
+.collapsible {
+  background-color: #777;
+  color: white;
+  cursor: pointer;
+  padding: 18px;
+  width: 100%;
+  border: none;
+  text-align: left;
+  outline: none;
+  font-size: 15px;
+}
+
+.active, .collapsible:hover {
+  background-color: #555;
+}
+
+.content {
+  padding: 0 18px;
+  display: none;
+  overflow: hidden;
+  background-color: #f1f1f1;
+}
+  
+#timerContainer {
+  font-family: 'Source Sans Pro', sans-serif;
+  font-weight: 300;
+  width:700px;
+  margin:20px auto;
+  min-height: 60px;
+  border-top:0px;
+}
+.timer, .reset {
+  float:left;
+  width: 54%;
+  padding: 20px 0;
+  font-size: 24px;
+  text-align:center;
+  color: #fff;
+  background: #A90000;
+  cursor: pointer
+}
+.reset {
+  background: #550000;
+  color: white;
+  width:14.9%;
+  border-left: 1px solid #990000;
+}
+.reset:hover {
+  background: #CC0000;
+}
+.lighter {
+  background: #CC0000
+}
+  
+.column {
+  float: left;
+  width: 50%;
+}
+
+[id*="overdueAssignments"]{
+	color: red;
+}
+
+table {
+	text-align: left;
+  border-collapse: collapse;
+}
+
+table, th, td {
+  border: 1px solid black;
+}
+
+th, td {
+  padding: 5px;
+}
+
+</style>
+
+<script type="text/javascript" src="ClassDeclarations.js"></script>
+
+<h1>IHTFPlanner</h1>
+  
+<button class="collapsible">Add Course Assignments</button>
+<div class="content">
+  <form id="CourseAssignments" action="/action_page.php">
+  Course Name: 
+  <input type="text" name="coursename" id="coursename">
+  Assignment Name: 
+  <input type="text" name="assignmentname" id="assignmentname"> <br>
+  Day of Week Due:
+  <select name="duedayofweek" id="duedayofweek">
+    <option value="Monday">Monday</option>
+    <option value="Tuesday">Tuesday</option>
+    <option value="Wednesday">Wednesday</option>
+    <option value="Thursday">Thursday</option>
+    <option value="Friday">Friday</option>
+    <option value="Saturday">Saturday</option>
+    <option value="Sunday">Sunday</option>
+  </select>
+  Time Due:
+  <input type="time" name="duetime" id="duetime">
+  <br>
+  Submission Format: 
+  Online Link: <input type="radio" onclick="javascript:yesnoCheck();" name="yesno" id="yesCheck"> 
+  Room Number: <input type="radio" onclick="javascript:yesnoCheck();" name="yesno" id="noCheck"><br>
+  
+  <div id="ifYes" style="visibility:hidden">
+        Link to Submission Site: <input type="url" id='onlinelink' name="onlinelink">
+  </div>
+  <div id="ifNo" style="visibility:hidden">
+        Room Number: <input type="text" id='roomname' name="roomname">
+  </div>
+  <input type="button" onclick="submitAssignment()" value="Submit Assignment">
+  <input type="button" onclick="resetAssignment()" value="Reset">
+	</form>
+</div>
+
+<div class="row">
+  <div id = "completeAssignments" class="column">
+    <table id = "completeAssignmentsTable">
+    	<thead>
+    		<tr>
+    			<th colspan = '6'>
+    				Complete Assignments
+    			</th>
+    		</tr>
+    		<tr>
+    			<th>Due Date</th>
+    			<th>Due Time</th>
+    			<th>Course Name</th>
+    			<th>Assignment Name</th>
+    			<th>Submission Method</th>
+    			<th>Submitted?</th>
+    		</tr>
+    	</thead>
+    	<tbody></tbody>
+	</table>
+  </div>
+  <div id = "currentAssignments" class="column">
+    <table id = "currentAssignmentsTable">
+    	<thead>
+    		<tr>
+    			<th colspan = '6'>
+    				Current Assignments
+    			</th>
+    		</tr>
+    		<tr>
+    			<th>Due Date</th>
+    			<th>Due Time</th>
+    			<th>Course Name</th>
+    			<th>Assignment Name</th>
+    			<th>Submission Method</th>
+    			<th>Submitted?</th>
+    		</tr>
+    	</thead>
+    	<tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+var recurringAssignments = [];
+var coll = document.getElementsByClassName("collapsible");
+var i;
+
+for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.display === "block") {
+      content.style.display = "none";
+    } else {
+      content.style.display = "block";
+    }
+  });
+}
+
+function yesnoCheck() {
+    if (document.getElementById('yesCheck').checked) {
+        document.getElementById('ifYes').style.visibility = 'visible';
+    }
+    else document.getElementById('ifYes').style.visibility = 'hidden';
+    if (document.getElementById('noCheck').checked) {
+        document.getElementById('ifNo').style.visibility = 'visible';
+    }
+    else document.getElementById('ifNo').style.visibility = 'hidden';
+
+}
+ 
+
+function submitAssignment() {
+  let form = document.forms.CourseAssignments; // <form name="CourseAssignments"> element
+
+  // get the element
+  let accessedcoursename = form.elements.coursename; // <input name="coursename"> element
+  let accessedassignmentname = form.elements.assignmentname; // <input name="assignmentname"> element
+  let accessedduedayofweek = form.elements.duedayofweek; // <input name="duedayofweek"> element
+  let accessedduetime = form.elements.duetime; // <input name="duetime"> element
+  let accessedonlinelink = form.elements.onlinelink; // <input name="onlinelink"> element
+  let accessedroomname = form.elements.roomname; // <input name="roomname"> element
+  if(document.getElementById('yesCheck').checked){
+    recurr = new RecurringAssignment(accessedcoursename.value, accessedassignmentname.value, accessedduedayofweek.value, accessedduetime.value, "Link".link(accessedonlinelink.value), populateTables);
+  }
+  if(document.getElementById('noCheck').checked){
+    recurr = new RecurringAssignment(accessedcoursename.value, accessedassignmentname.value, accessedduedayofweek.value, accessedduetime.value, accessedroomname.value, populateTables);
+  }
+  recurringAssignments.push(recurr);
+  populateTables();
+  //document.write(JSON.stringify(recurr));
+}
+  
+function resetAssignment() {
+  document.getElementById("CourseAssignments").reset();
+}
+
+
+
+function populateTables(){
+	var DAYSOFWEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+	var completedAssignments = [];
+	for(var i=0; i<recurringAssignments.length; i++){
+		completedAssignments = completedAssignments.concat(recurringAssignments[i].getCompletedAssignments());
+	}
+	var overdueAssignments = [];
+	for(var i=0; i<recurringAssignments.length; i++){
+		overdueAssignments = overdueAssignments.concat(recurringAssignments[i].getOverdueAssignments());
+	}
+	var nextAssignments = [];
+	for(var i=0; i<recurringAssignments.length; i++){
+		nextAssignments.push(recurringAssignments[i].getNextAssignment());
+	}
+	var currentTable = document.getElementById("currentAssignmentsTable").getElementsByTagName('tbody')[0];
+	currentTable.innerHTML = "";
+	var completeTable = document.getElementById("completeAssignmentsTable").getElementsByTagName('tbody')[0];
+	completeTable.innerHTML = "";
+	for(var i=0; i<completedAssignments.length; i++){
+		var row = completeTable.insertRow(-1);
+		var assignment = completedAssignments[i];
+		var dateCell = row.insertCell(-1);
+		var timeCell = row.insertCell(-1);
+		var courseCell = row.insertCell(-1);
+		var nameCell = row.insertCell(-1);
+		var submissionMethodCell = row.insertCell(-1);
+		var submittedCell = row.insertCell(-1);
+		var dueDate = assignment.getDueDate();
+		dateCell.innerHTML = DAYSOFWEEK[dueDate.getDay()] + ", " + (dueDate.getMonth()+1) + "/" + dueDate.getDate();
+		timeCell.innerHTML = assignment.getDueTime();
+		courseCell.innerHTML = assignment.getCourse();
+		nameCell.innerHTML = assignment.getAssignmentName();
+		submissionMethodCell.innerHTML = assignment.getSubmissionMethod();
+		submittedCell.appendChild(assignment.checkbox);
+	}
+	for(var i=0; i<overdueAssignments.length; i++){
+		var row = currentTable.insertRow(-1)
+		row.id = "overdueAssignments" + i;
+		var assignment = overdueAssignments[i];
+		var dateCell = row.insertCell(-1);
+		var timeCell = row.insertCell(-1);
+		var courseCell = row.insertCell(-1);
+		var nameCell = row.insertCell(-1);
+		var submissionMethodCell = row.insertCell(-1);
+		var submittedCell = row.insertCell(-1);
+		var dueDate = assignment.getDueDate();
+		dateCell.innerHTML = DAYSOFWEEK[dueDate.getDay()] + ", " + (dueDate.getMonth()+1) + "/" + dueDate.getDate();
+		timeCell.innerHTML = assignment.getDueTime();
+		courseCell.innerHTML = assignment.getCourse();
+		nameCell.innerHTML = assignment.getAssignmentName();
+		submissionMethodCell.innerHTML = assignment.getSubmissionMethod();
+		submittedCell.appendChild(assignment.checkbox);
+	}
+
+	for(var i=0; i<nextAssignments.length; i++){
+		var row = currentTable.insertRow(-1)
+		row.id = "nextAssignmentList" + i;
+		var assignment = nextAssignments[i];
+		var dateCell = row.insertCell(-1);
+		var timeCell = row.insertCell(-1);
+		var courseCell = row.insertCell(-1);
+		var nameCell = row.insertCell(-1);
+		var submissionMethodCell = row.insertCell(-1);
+		var submittedCell = row.insertCell(-1);
+		var dueDate = assignment.getDueDate();
+		dateCell.innerHTML = DAYSOFWEEK[dueDate.getDay()] + ", " + (dueDate.getMonth()+1) + "/" + dueDate.getDate();
+		timeCell.innerHTML = assignment.getDueTime();
+		courseCell.innerHTML = assignment.getCourse();
+		nameCell.innerHTML = assignment.getAssignmentName();
+		submissionMethodCell.innerHTML = assignment.getSubmissionMethod();
+		submittedCell.appendChild(assignment.checkbox);
+	}
+}
+
+
+</script>
+
+</body>
+</html>
